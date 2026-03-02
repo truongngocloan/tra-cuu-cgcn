@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cứu Chuyển giao công nghệ - CTUMP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white p-1 rounded-full">
+                    <img src="https://as.ctump.edu.vn/favicon.ico" alt="Logo" class="w-10 h-10">
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg uppercase leading-tight">Trường Đại học Y Dược Cần Thơ</h1>
+                    <p class="text-xs opacity-90 uppercase">Cổng tra cứu chuyển giao công nghệ</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-10 max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Tra cứu tiến độ hồ sơ</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email đăng ký</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <input type="email" id="userEmail" 
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm"
+                            placeholder="example@gmail.com">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mã tra cứu</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fas fa-key"></i>
+                        </span>
+                        <input type="text" id="trackingCode" 
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm uppercase"
+                            placeholder="CGCN-XXXXXX">
+                    </div>
+                </div>
+
+                <button onclick="checkProgress()" id="btnSearch"
+                    class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-xl transition duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2">
+                    <i class="fas fa-search"></i>
+                    <span>Kiểm tra ngay</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="resultArea" class="hidden animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                <div class="bg-green-600 px-6 py-3 text-white flex justify-between items-center">
+                    <span class="font-semibold"><i class="fas fa-info-circle mr-2"></i>Thông tin hồ sơ</span>
+                    <span id="resCode" class="bg-white text-green-700 px-2 py-1 rounded text-xs font-bold"></span>
+                </div>
+                
+                <div class="p-8">
+                    <div class="mb-6">
+                        <p class="text-sm text-gray-500 mb-1">Tên sản phẩm/công nghệ:</p>
+                        <h3 id="resName" class="text-xl font-bold text-gray-800"></h3>
+                    </div>
+
+                    <div class="relative pt-1">
+                        <p class="text-sm text-gray-500 mb-4 font-medium uppercase tracking-wider">Tiến độ hiện tại</p>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                            <p id="resStatus" class="text-xl font-bold text-blue-700 leading-tight"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100 flex items-center text-gray-500 text-sm">
+                        <i class="far fa-clock mr-2"></i>
+                        <span>Cập nhật cuối cùng: </span>
+                        <span id="resTime" class="ml-1 font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorArea" class="hidden bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center shadow-md">
+            <i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>
+            <span id="errorMsg">Thông tin không chính xác hoặc hồ sơ không tồn tại.</span>
+        </div>
+    </main>
+
+    <script>
+        async function checkProgress() {
+            const email = document.getElementById('userEmail').value.trim();
+            const code = document.getElementById('trackingCode').value.trim().toUpperCase();
+            const btn = document.getElementById('btnSearch');
+            const resultArea = document.getElementById('resultArea');
+            const errorArea = document.getElementById('errorArea');
+
+            if(!email || !code) {
+                alert("Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+
+            // Hiệu ứng Loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> <span>Đang kiểm tra...</span>';
+            resultArea.classList.add('hidden');
+            errorArea.classList.add('hidden');
+
+            // Cấu hình URL Webhook của em (Dùng Production URL khi chạy thật)
+            const webhookUrl = `https://as.ctump.edu.vn/webhook/tracuu?email=${email}&macgcn=${code}`;
+
+            try {
+                const response = await fetch(webhookUrl);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    document.getElementById('resName').innerText = result.data.ten_cong_nghe || "Hồ sơ Chuyển giao công nghệ";
+                    document.getElementById('resStatus').innerText = result.data.tien_do_hien_tai;
+                    document.getElementById('resTime').innerText = result.data.ngay_cap_nhat;
+                    document.getElementById('resCode').innerText = result.data.ma_tra_cuu;
+                    
+                    resultArea.classList.remove('hidden');
+                } else {
+                    errorArea.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Lỗi:", error);
+                alert("Lỗi kết nối máy chủ n8n. Vui lòng thử lại sau!");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> <span>Kiểm tra ngay</span>';
+            }
+        }
+    </script>
+
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</body>
+</html>
