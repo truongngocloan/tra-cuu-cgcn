@@ -73,11 +73,10 @@
                         <h3 id="resName" class="text-xl font-bold text-gray-800"></h3>
                     </div>
 
-                    <div class="relative pt-1">
-                        <p class="text-sm text-gray-500 mb-4 font-medium uppercase tracking-wider">Tiến độ hiện tại</p>
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
-                            <p id="resStatus" class="text-xl font-bold text-blue-700 leading-tight"></p>
-                        </div>
+                    <div class="mt-8">
+                        <p class="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Tiến độ thực hiện</p>
+                        <div id="timelineContainer" class="ml-3 border-l-2 border-gray-200">
+                            </div>
                     </div>
 
                     <div class="mt-8 pt-6 border-t border-gray-100 flex items-center text-gray-500 text-sm">
@@ -96,6 +95,18 @@
     </main>
 
     <script>
+        // MẢNG CHỨA 8 BƯỚC QUY TRÌNH (Cần khớp với Dropdown trong Sheet của em)
+        const processSteps = [
+            "Tiếp nhận yêu cầu",
+            "Ghi nhận và kiểm tra",
+            "Thương thảo hợp đồng",
+            "Trình Ban Giám Hiệu",
+            "Tiến hành ký kết hợp đồng",
+            "Đang thực hiện chuyển giao",
+            "Thanh lý hợp đồng",
+            "Báo cáo kết quả"
+        ];
+
         async function checkProgress() {
             const email = document.getElementById('userEmail').value.trim();
             const code = document.getElementById('trackingCode').value.trim().toUpperCase();
@@ -108,13 +119,12 @@
                 return;
             }
 
-            // Hiệu ứng Loading
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> <span>Đang kiểm tra...</span>';
             resultArea.classList.add('hidden');
             errorArea.classList.add('hidden');
 
-            // Cấu hình URL Webhook của em (Dùng Production URL khi chạy thật)
+            // NHỚ ĐỔI LẠI THÀNH ĐƯỜNG LINK WEBHOOK PRODUCTION CỦA EM NHÉ
             const webhookUrl = `https://as.ctump.edu.vn/webhook/tracuu?email=${email}&macgcn=${code}`;
 
             try {
@@ -123,10 +133,46 @@
 
                 if (result.status === 'success') {
                     document.getElementById('resName').innerText = result.data.ten_cong_nghe || "Hồ sơ Chuyển giao công nghệ";
-                    document.getElementById('resStatus').innerText = result.data.tien_do_hien_tai;
                     document.getElementById('resTime').innerText = result.data.ngay_cap_nhat;
                     document.getElementById('resCode').innerText = result.data.ma_tra_cuu;
                     
+                    // XỬ LÝ VẼ TIMELINE
+                    const currentStatus = result.data.tien_do_hien_tai.trim();
+                    let currentIndex = processSteps.findIndex(step => currentStatus.includes(step));
+                    if (currentIndex === -1) currentIndex = 0; // Đề phòng lỗi không khớp text
+
+                    let timelineHtml = '';
+                    processSteps.forEach((step, index) => {
+                        const isCompleted = index <= currentIndex; // Các bước đã xong và đang làm
+                        const isCurrent = index === currentIndex;  // Bước hiện tại (nháy sáng)
+
+                        // Set màu: Đã xong -> Xanh lá | Chưa tới -> Xám
+                        const circleColor = isCompleted ? 'bg-green-500 ring-green-100' : 'bg-gray-200 ring-white';
+                        const textColor = isCompleted ? 'text-green-700 font-bold' : 'text-gray-400 font-medium';
+                        
+                        // Icon: Đã xong -> Checkmark | Chưa tới -> Chấm tròn
+                        let iconHtml = isCompleted 
+                            ? '<i class="fas fa-check text-white text-[10px]"></i>' 
+                            : '';
+
+                        // Dấu hiệu nhận biết bước đang thực hiện (Current Step)
+                        let currentBadge = isCurrent 
+                            ? '<span class="ml-2 bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Đang xử lý</span>' 
+                            : '';
+
+                        timelineHtml += `
+                            <div class="relative pl-6 pb-6 last:pb-0">
+                                <span class="absolute left-[-9px] top-1 flex items-center justify-center w-[18px] h-[18px] rounded-full ring-4 ${circleColor}">
+                                    ${iconHtml}
+                                </span>
+                                <h4 class="${textColor} text-md leading-none flex items-center">
+                                    ${step} ${currentBadge}
+                                </h4>
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('timelineContainer').innerHTML = timelineHtml;
                     resultArea.classList.remove('hidden');
                 } else {
                     errorArea.classList.remove('hidden');
