@@ -96,7 +96,7 @@
     </main>
 
     <script>
-        // MẢNG CHỨA 8 BƯỚC QUY TRÌNH (Cần khớp với Dropdown trong Sheet của em)
+        // MẢNG CHỨA 8 BƯỚC QUY TRÌNH 
         const processSteps = [
             "Tiếp nhận yêu cầu",
             "Ghi nhận và kiểm tra",
@@ -125,7 +125,7 @@
             resultArea.classList.add('hidden');
             errorArea.classList.add('hidden');
 
-            // NHỚ ĐỔI LẠI THÀNH ĐƯỜNG LINK WEBHOOK PRODUCTION CỦA EM NHÉ
+            // ĐƯỜNG LINK WEBHOOK PRODUCTION
             const webhookUrl = `https://as.ctump.edu.vn/webhook/tracuu?email=${email}&macgcn=${code}`;
 
             try {
