@@ -24,8 +24,8 @@
         </div>
     </header>
 
-    <main class="container mx-auto px-4 py-10 max-w-2xl">
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+    <main class="container mx-auto px-4 py-10 max-w-6xl">
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100 max-w-2xl mx-auto">
             <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Tra cứu tiến độ hồ sơ</h2>
             
             <div class="space-y-4">
@@ -63,40 +63,48 @@
 
         <div id="resultArea" class="hidden animate-fade-in">
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-                <div class="bg-green-600 px-6 py-3 text-white flex justify-between items-center">
-                    <span class="font-semibold"><i class="fas fa-info-circle mr-2"></i>Thông tin hồ sơ</span>
-                    <span id="resCode" class="bg-white text-green-700 px-2 py-1 rounded text-xs font-bold"></span>
+                <div class="bg-green-600 px-6 py-4 text-white flex flex-wrap justify-between items-center gap-2">
+                    <span class="font-semibold text-lg"><i class="fas fa-info-circle mr-2"></i>Thông tin hồ sơ</span>
+                    <span id="resCode" class="bg-white text-green-700 px-3 py-1 rounded text-sm font-bold shadow-sm"></span>
                 </div>
                 
                 <div class="p-8">
-                    <div class="mb-6">
-                        <p class="text-sm text-gray-500 mb-1">Tên sản phẩm/công nghệ:</p>
-                        <h3 id="resName" class="text-xl font-bold text-gray-800"></h3>
+                    <div class="mb-8 border-b border-gray-100 pb-6">
+                        <p class="text-sm text-gray-500 mb-1 uppercase tracking-wider font-semibold">Tên sản phẩm/công nghệ</p>
+                        <h3 id="resName" class="text-2xl font-bold text-blue-900"></h3>
                     </div>
 
-                    <div class="mt-8">
-                        <p class="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Tiến độ thực hiện</p>
-                        <div id="timelineContainer" class="ml-3 border-l-2 border-gray-200">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-6 font-semibold uppercase tracking-wider text-center">Tiến độ thực hiện</p>
+                        
+                        <div id="timelineContainer" class="w-full">
                             </div>
                     </div>
 
-                    <div class="mt-8 pt-6 border-t border-gray-100 flex items-center text-gray-500 text-sm">
+                    <div id="historyBox" class="hidden mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5 animate-fade-in">
+                        <div class="flex items-center text-amber-800 mb-3">
+                            <i class="fas fa-history text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg" id="historyTitle">Lịch sử phản hồi</h4>
+                        </div>
+                        <p id="historyContent" class="text-gray-700 whitespace-pre-line"></p>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100 flex items-center text-gray-500 text-sm justify-center">
                         <i class="far fa-clock mr-2"></i>
                         <span>Cập nhật cuối cùng: </span>
-                        <span id="resTime" class="ml-1 font-semibold"></span>
+                        <span id="resTime" class="ml-1 font-semibold text-gray-700"></span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="errorArea" class="hidden bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center shadow-md">
+        <div id="errorArea" class="hidden bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center shadow-md max-w-2xl mx-auto mt-8">
             <i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>
             <span id="errorMsg">Thông tin không chính xác hoặc hồ sơ không tồn tại.</span>
         </div>
     </main>
 
     <script>
-        // MẢNG CHỨA 8 BƯỚC QUY TRÌNH 
         const processSteps = [
             "Tiếp nhận yêu cầu",
             "Ghi nhận và kiểm tra",
@@ -108,12 +116,16 @@
             "Báo cáo kết quả"
         ];
 
+        // Biến toàn cục để lưu trữ dữ liệu trả về, tiện cho việc hiển thị lịch sử
+        let currentProjectData = {};
+
         async function checkProgress() {
             const email = document.getElementById('userEmail').value.trim();
             const code = document.getElementById('trackingCode').value.trim().toUpperCase();
             const btn = document.getElementById('btnSearch');
             const resultArea = document.getElementById('resultArea');
             const errorArea = document.getElementById('errorArea');
+            const historyBox = document.getElementById('historyBox');
 
             if(!email || !code) {
                 alert("Vui lòng nhập đầy đủ thông tin!");
@@ -124,8 +136,9 @@
             btn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> <span>Đang kiểm tra...</span>';
             resultArea.classList.add('hidden');
             errorArea.classList.add('hidden');
+            historyBox.classList.add('hidden'); // Giấu hộp lịch sử khi tra cứu mới
 
-            // ĐƯỜNG LINK WEBHOOK PRODUCTION
+            
             const webhookUrl = `https://as.ctump.edu.vn/webhook/tracuu?email=${email}&macgcn=${code}`;
 
             try {
@@ -133,45 +146,59 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
+                    currentProjectData = result.data; // Lưu dữ liệu để dùng sau
+                    
                     document.getElementById('resName').innerText = result.data.ten_cong_nghe || "Hồ sơ Chuyển giao công nghệ";
                     document.getElementById('resTime').innerText = result.data.ngay_cap_nhat;
                     document.getElementById('resCode').innerText = result.data.ma_tra_cuu;
                     
-                    // XỬ LÝ VẼ TIMELINE
                     const currentStatus = result.data.tien_do_hien_tai.trim();
                     let currentIndex = processSteps.findIndex(step => currentStatus.includes(step));
-                    if (currentIndex === -1) currentIndex = 0; // Đề phòng lỗi không khớp text
+                    if (currentIndex === -1) currentIndex = 0;
 
-                    let timelineHtml = '';
+                    // THUẬT TOÁN VẼ TIMELINE NẰM NGANG
+                    // Dùng overflow-x-auto để vuốt ngang trên điện thoại
+                    let timelineHtml = '<div class="flex items-start justify-between w-full overflow-x-auto pb-4 pt-2 custom-scrollbar">';
+                    
                     processSteps.forEach((step, index) => {
-                        const isCompleted = index <= currentIndex; // Các bước đã xong và đang làm
-                        const isCurrent = index === currentIndex;  // Bước hiện tại (nháy sáng)
+                        const isCompleted = index <= currentIndex; 
+                        const isCurrent = index === currentIndex;  
 
-                        // Set màu: Đã xong -> Xanh lá | Chưa tới -> Xám
-                        const circleColor = isCompleted ? 'bg-green-500 ring-green-100' : 'bg-gray-200 ring-white';
+                        const circleColor = isCompleted ? 'bg-green-500 ring-green-100 border-green-500' : 'bg-white ring-gray-100 border-gray-300';
                         const textColor = isCompleted ? 'text-green-700 font-bold' : 'text-gray-400 font-medium';
                         
-                        // Icon: Đã xong -> Checkmark | Chưa tới -> Chấm tròn
                         let iconHtml = isCompleted 
-                            ? '<i class="fas fa-check text-white text-[10px]"></i>' 
+                            ? '<i class="fas fa-check text-white text-[12px]"></i>' 
+                            : `<span class="text-[10px] text-gray-400 font-bold">${index + 1}</span>`;
+
+                        let currentBadge = isCurrent 
+                            ? '<div class="mt-2 inline-block bg-green-100 text-green-800 text-[10px] px-2 py-1 rounded-full uppercase tracking-wider font-bold shadow-sm">Đang xử lý</div>' 
                             : '';
 
-                        // Dấu hiệu nhận biết bước đang thực hiện (Current Step)
-                        let currentBadge = isCurrent 
-                            ? '<span class="ml-2 bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Đang xử lý</span>' 
-                            : '';
+                        // Vẽ sợi dây nối ngang (trừ phần tử cuối cùng)
+                        let lineHtml = '';
+                        if (index < processSteps.length - 1) {
+                            const lineColor = (isCompleted && index < currentIndex) ? 'bg-green-400' : 'bg-gray-200';
+                            lineHtml = `<div class="absolute top-[15px] left-[50%] w-full h-[3px] ${lineColor} z-0"></div>`;
+                        }
 
                         timelineHtml += `
-                            <div class="relative pl-6 pb-6 last:pb-0">
-                                <span class="absolute left-[-9px] top-1 flex items-center justify-center w-[18px] h-[18px] rounded-full ring-4 ${circleColor}">
+                            <div class="relative flex-1 min-w-[130px] text-center group">
+                                ${lineHtml}
+                                <div onclick="showFeedback('${step}')" 
+                                     class="relative z-10 mx-auto flex items-center justify-center w-[30px] h-[30px] rounded-full ring-4 border-2 cursor-pointer transition-all duration-300 transform hover:scale-125 shadow-md ${circleColor}"
+                                     title="Nhấn để xem chi tiết bước này">
                                     ${iconHtml}
-                                </span>
-                                <h4 class="${textColor} text-md leading-none flex items-center">
-                                    ${step} ${currentBadge}
+                                </div>
+                                <h4 class="mt-4 ${textColor} text-xs uppercase leading-relaxed px-2 h-10 flex items-start justify-center">
+                                    ${step}
                                 </h4>
+                                ${currentBadge}
                             </div>
                         `;
                     });
+                    
+                    timelineHtml += '</div>';
 
                     document.getElementById('timelineContainer').innerHTML = timelineHtml;
                     resultArea.classList.remove('hidden');
@@ -186,11 +213,56 @@
                 btn.innerHTML = '<i class="fas fa-search"></i> <span>Kiểm tra ngay</span>';
             }
         }
+
+        // HÀM HIỂN THỊ LỊCH SỬ PHẢN HỒI KHI CLICK VÀO NÚT TRÒN
+        function showFeedback(stepName) {
+            const historyBox = document.getElementById('historyBox');
+            const historyTitle = document.getElementById('historyTitle');
+            const historyContent = document.getElementById('historyContent');
+            
+            historyTitle.innerText = `Chi tiết: ${stepName}`;
+
+            // Lấy MẢNG lịch sử từ n8n
+            const historyArray = currentProjectData.lich_su_phan_hoi;
+
+            // KIỂM TRA VÀ LỌC DỮ LIỆU
+            if (Array.isArray(historyArray) && historyArray.length > 0) {
+                // Sức mạnh của Javascript: Lọc ra đúng những gói lịch sử của bước đang click
+                const filteredHistory = historyArray.filter(item => item.buoc === stepName);
+
+                if (filteredHistory.length > 0) {
+                    let displayHtml = "";
+                    // Duyệt qua từng gói đã lọc và vẽ ra text
+                    filteredHistory.forEach(item => {
+                        displayHtml += `⏳ [${item.thoi_gian}]\n💬 ${item.chi_tiet}\n\n`;
+                    });
+                    // In kết quả ra màn hình
+                    historyContent.innerText = displayHtml.trim();
+                } else {
+                    // Nếu bước này có click vào nhưng không có lỗi nào
+                    historyContent.innerText = "✅ Không có yêu cầu chỉnh sửa nào ở bước này.";
+                }
+            } else {
+                // Nếu toàn bộ hồ sơ trống trơn không có lịch sử lỗi
+                historyContent.innerText = "✅ Không có yêu cầu chỉnh sửa nào ở bước này.";
+            }
+
+            // Hiển thị hộp lịch sử với hiệu ứng
+            historyBox.classList.remove('hidden');
+            historyBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    
     </script>
 
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Chỉnh thanh cuộn ngang cho timeline mượt mà và đẹp hơn trên Windows */
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </body>
 </html>
